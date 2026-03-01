@@ -2,10 +2,8 @@ name: 每日科技资讯推送
 
 on:
   # 定时任务
-  schedule:
-    # 这里的 cron 表达式使用 UTC 时间。
-    # 北京时间早上 8:00 对应 UTC 时间的 0:00。
-    - cron: '0 0 * * *'
+ schedule:
+    - cron: '0 22 * * *'
   
   # 允许在 GitHub Actions 页面手动点击运行，方便调试
   workflow_dispatch:
