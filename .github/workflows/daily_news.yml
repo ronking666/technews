@@ -1,11 +1,9 @@
 name: 每日科技资讯推送
 
 on:
-  # 定时任务
- schedule:
+  schedule:
     - cron: '0 22 * * *'
   
-  # 允许在 GitHub Actions 页面手动点击运行，方便调试
   workflow_dispatch:
 
 jobs:
@@ -28,7 +26,6 @@ jobs:
 
     - name: 运行推送脚本
       env:
-        # 将配置好的 Secret 传入环境变量供 Python 读取
         SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
       run: |
         python main.py
