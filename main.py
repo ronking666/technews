@@ -4,29 +4,34 @@ from datetime import datetime
 
 def get_tech_news():
     """
-    通过 Readhub API 获取最新科技动态（比直接爬取网页更稳定）
+    通过免费的公开 API 获取最新IT科技动态 (韩小韩 API)
     """
-    url = "https://api.readhub.cn/topic"
+    url = "https://api.vvhan.com/api/hotlist/itNews"
     try:
-        # 设置 timeout 防止请求卡死
-        response = requests.get(url, timeout=10)
+        # 加上 User-Agent 模拟真实浏览器，防止被拦截
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
-        data = response.json().get('data', [])
+        result = response.json()
         
-        if not data:
-            return "今日暂无抓取到科技资讯。"
+        if not result.get("success") or not result.get("data"):
+            return "获取资讯失败，接口返回数据为空或正在维护中。"
 
-        # 提取前 10 条最新资讯
+        data = result.get('data', [])
         news_list = []
+        
+        # 提取前 10 条最新资讯
         for index, item in enumerate(data[:10], 1):
             title = item.get('title', '无标题')
-            summary = item.get('summary', '无摘要内容')
-            # 截取摘要前150个字符，保持推送排版清爽
-            if len(summary) > 150:
-                summary = summary[:150] + "..."
+            link = item.get('url', '')
             
-            # 使用 Markdown 格式排版
-            news_list.append(f"### {index}. {title}\n\n> {summary}\n\n---\n")
+            # 格式化为带有超链接的 Markdown
+            if link:
+                news_list.append(f"### {index}. [{title}]({link})\n\n---\n")
+            else:
+                news_list.append(f"### {index}. {title}\n\n---\n")
         
         return "".join(news_list)
         
@@ -57,10 +62,9 @@ def send_to_serverchan(sendkey, content):
         print(f"❌ 请求 Server酱 接口时发生异常：{e}")
 
 if __name__ == "__main__":
-    # 从 GitHub Actions 环境变量中读取 SendKey
     sendkey = os.environ.get("SERVERCHAN_SENDKEY")
     if not sendkey:
-        print("错误：未找到 SERVERCHAN_SENDKEY 环境变量，请检查 GitHub Secrets 配置。")
+        print("错误：未找到 SERVERCHAN_SENDKEY 环境变量。")
         exit(1)
         
     print("开始获取最新科技资讯...")
