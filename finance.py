@@ -5,9 +5,8 @@ from datetime import datetime
 
 def get_market_data():
     """
-    通过雅虎财经获取指数和金属的涨跌情况
+    通过雅虎财经获取指数和金属的涨跌情况（增强版：防周末/节假日休市）
     """
-    # 定义需要获取的标的字典 (名称: 雅虎财经代码)
     tickers = {
         "纳斯达克100指数": "^NDX",
         "黄金 (纽约期金)": "GC=F",
@@ -22,16 +21,17 @@ def get_market_data():
     for name, ticker_symbol in tickers.items():
         try:
             ticker = yf.Ticker(ticker_symbol)
-            # 获取最近两天的历史数据来计算涨跌
-            hist = ticker.history(period="2d")
+            # 获取过去5天的数据，防止因为周末或节假日导致数据不足
+            hist = ticker.history(period="5d")
             
             if len(hist) >= 2:
-                prev_close = hist['Close'].iloc[0]
-                current = hist['Close'].iloc[1]
+                # 永远取有效数据里的最后一天和倒数第二天
+                prev_close = hist['Close'].iloc[-2]
+                current = hist['Close'].iloc[-1]
+                
                 change = current - prev_close
                 pct_change = (change / prev_close) * 100
                 
-                # 格式化涨跌符号和排版
                 emoji = "📈" if change > 0 else "📉" if change < 0 else "➖"
                 sign = "+" if change > 0 else ""
                 
@@ -41,7 +41,7 @@ def get_market_data():
                     f"---\n"
                 )
             else:
-                result_lines.append(f"### {name}\n> 暂无最新数据（可能休市）\n\n---\n")
+                result_lines.append(f"### {name}\n> 暂无最新数据（数据源获取异常）\n\n---\n")
         except Exception as e:
             result_lines.append(f"### {name}\n> 获取数据失败\n\n---\n")
 
