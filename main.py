@@ -1,31 +1,35 @@
 import os
 import requests
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 def get_tech_news():
     """
-    通过免费的公开 API 获取最新IT科技动态 (韩小韩 API)
+    通过解析 IT之家 (ITHome) 的官方 RSS 源获取最新科技资讯。
+    直接请求官方源，最稳定，不易失效。
     """
-    url = "https://api.vvhan.com/api/hotlist/itNews"
+    url = "https://www.ithome.com/rss/"
     try:
-        # 加上 User-Agent 模拟真实浏览器，防止被拦截
+        # 伪装成普通浏览器，防止被盾拦截
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
-        result = response.json()
         
-        if not result.get("success") or not result.get("data"):
-            return "获取资讯失败，接口返回数据为空或正在维护中。"
+        # 使用 Python 自带的 XML 库解析 RSS 数据
+        root = ET.fromstring(response.content)
+        items = root.findall('.//item')
+        
+        if not items:
+            return "获取资讯失败：源网站未返回数据。"
 
-        data = result.get('data', [])
         news_list = []
         
-        # 提取前 10 条最新资讯
-        for index, item in enumerate(data[:10], 1):
-            title = item.get('title', '无标题')
-            link = item.get('url', '')
+        # 提取前 12 条最新资讯
+        for index, item in enumerate(items[:12], 1):
+            title = item.find('title').text if item.find('title') is not None else '无标题'
+            link = item.find('link').text if item.find('link') is not None else ''
             
             # 格式化为带有超链接的 Markdown
             if link:
