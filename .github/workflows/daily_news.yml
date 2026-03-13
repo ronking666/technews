@@ -2,7 +2,7 @@ name: 每日科技资讯推送
 
 on:
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '23 34 * * *'
   
   workflow_dispatch:
 
