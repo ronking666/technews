@@ -1,28 +1,71 @@
 import os
 import requests
+import xml.etree.ElementTree as ET
 from datetime import datetime
+import re
 
-# ================= 1. 综合大事件模块 (Readhub) =================
-def get_readhub_news():
-    """获取 Readhub 每日热点资讯 (国内外政经、大事件综合)"""
+# ================= 辅助函数：清理文本 =================
+def clean_text(text):
+    """清理 RSS 标题中可能夹杂的 HTML 标签，保证排版整洁"""
+    if not text:
+        return "无内容"
+    cleanr = re.compile('<.*?>')
+    text = re.sub(cleanr, '', text)
+    return text.strip()
+
+# ================= 1. 综合导读模块 (Readhub) =================
+def get_readhub_news(limit=5):
+    """获取 Readhub 每日热点资讯 (提取前 5 条作为宏观背景)"""
     url = "https://api.readhub.cn/topic"
     try:
         res = requests.get(url, timeout=10)
         res.raise_for_status()
         data = res.json()
         
-        news_list = ["### 🌍 每日全球要闻汇总\n"]
-        # 提取前 20 条大事
-        for index, item in enumerate(data.get('data', [])[:20], 1):
+        news_list = ["### 🌐 全网宏观大事件导读\n"]
+        for index, item in enumerate(data.get('data', [])[:limit], 1):
             title = item.get('title', '无标题')
-            summary = item.get('summary', '')[:80] + "..." # 截取 80 字摘要，看清来龙去脉
+            summary = item.get('summary', '')[:60] + "..." 
             news_list.append(f"**{index}. {title}**\n> {summary}\n")
-        
         return "\n".join(news_list) + "\n\n"
     except Exception as e:
-        return f"### 🌍 每日全球要闻汇总\n获取失败: {e}\n\n"
+        return f"### 🌐 全网宏观大事件导读\n获取失败: {e}\n\n"
 
-# ================= 2. 推送模块 (Server酱) =================
+# ================= 2. 顶级政经与外媒模块 (RSS解析) =================
+def get_rss_news(source_name, rss_url, limit=3):
+    """通用的 RSS 抓取函数，用于抓取财联社、路透等硬核信源"""
+    # 伪装成正常的浏览器，防止被拦截
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/rss+xml, application/xml, text/xml"
+    }
+    try:
+        res = requests.get(rss_url, headers=headers, timeout=15)
+        res.raise_for_status()
+        root = ET.fromstring(res.content)
+        items = root.findall('.//item')
+        
+        if not items:
+            return f"### 📰 {source_name}\n暂无最新数据。\n\n"
+            
+        news_list = [f"### 📰 {source_name}\n"]
+        for index, item in enumerate(items[:limit], 1):
+            raw_title = item.find('title').text if item.find('title') is not None else '无标题'
+            link = item.find('link').text if item.find('link') is not None else ''
+            
+            # 财联社/华尔街见闻的快讯可能很长，截取前 60 个字作为标题
+            title = clean_text(raw_title)
+            if len(title) > 60:
+                title = title[:60] + "..."
+                
+            # 格式化为 Markdown 链接
+            news_list.append(f"{index}. [{title}]({link})")
+            
+        return "\n".join(news_list) + "\n\n"
+    except Exception as e:
+        return f"### 📰 {source_name}\n获取失败: {e}\n\n"
+
+# ================= 3. 推送模块 (Server酱) =================
 def send_to_serverchan(sendkey, title, content):
     """通过 Server酱 推送到微信"""
     url = f"https://sctapi.ftqq.com/{sendkey}.send"
@@ -39,19 +82,34 @@ def send_to_serverchan(sendkey, title, content):
 
 # ================= 主程序 =================
 if __name__ == "__main__":
-    # 从系统环境变量读取 SendKey
     SENDKEY = os.environ.get("SERVERCHAN_SENDKEY")
     
     if not SENDKEY:
         print("❌ 未找到 SERVERCHAN_SENDKEY 环境变量，程序退出。")
         exit(1)
 
-    print("开始生成今日早报...")
+    print("开始生成今日顶级资讯早报...")
     today_str = datetime.now().strftime("%Y-%m-%d")
-    report_title = f"☕ 早安！{today_str} 全球宏观要闻简报"
+    report_title = f"☕ 早安！{today_str} 全球宏观要闻"
     
-    # 组装内容，只保留新闻
-    final_content = get_readhub_news()
+    # 1. 获取 Readhub 导读 (5条)
+    final_content = get_readhub_news(limit=5)
+    final_content += "---\n\n" # 分割线
     
-    # 发送推送
+    # 2. 定义各大顶级信源的 RSS 地址 (使用开源的 RSSHub 节点以确保稳定性)
+    # 注意：国内部分节点可能会因网络波动获取失败，代码已做容错处理，失败不会影响其他新闻。
+    rss_sources = [
+        {"name": "华尔街见闻 (7x24全球实时)", "url": "https://rsshub.app/wallstreetcn/news/global"},
+        {"name": "财联社 (电报快讯)", "url": "https://rsshub.app/cls/telegraph"},
+        {"name": "财新网 (深度追踪)", "url": "https://rsshub.app/caixin/latest"},
+        {"name": "Reuters (路透社国际)", "url": "https://rsshub.app/reuters/world"},
+        {"name": "AP News (美联社头条)", "url": "https://rsshub.app/apnews/topics/ap-top-news"}
+    ]
+    
+    # 3. 循环抓取上述源 (每个抓 3 条，共 15 条)
+    for source in rss_sources:
+        print(f"正在抓取: {source['name']}...")
+        final_content += get_rss_news(source['name'], source['url'], limit=3)
+    
+    # 4. 发送推送
     send_to_serverchan(SENDKEY, report_title, final_content)
