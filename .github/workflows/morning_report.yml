@@ -1,4 +1,4 @@
-name: Daily Morning Report
+name: 每日新闻咨询推送
 
 on:
   schedule:
