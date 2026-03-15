@@ -1,0 +1,98 @@
+import os
+import requests
+import xml.etree.ElementTree as ET
+from datetime import datetime
+
+# ================= 1. 天气模块 =================
+def get_weather(city="Singapore"):
+    """使用 wttr.in 获取极简天气预报"""
+    try:
+        url = f"https://wttr.in/{city}?format=%C+%t+(体感+%M)+湿度:%h"
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        return f"**今日天气 ({city}):** {res.text}\n\n"
+    except Exception as e:
+        return f"**今日天气:** 获取失败 ({e})\n\n"
+
+# ================= 2. 综合新闻模块 (Readhub) =================
+def get_readhub_news():
+    """获取 Readhub 每日热点资讯 (国内外政经、科技综合)"""
+    url = "https://api.readhub.cn/topic"
+    try:
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        data = res.json()
+        
+        news_list = ["### 🌍 每日综合要闻 (Readhub)\n"]
+        # 提取前 8 条
+        for index, item in enumerate(data.get('data', [])[:8], 1):
+            title = item.get('title', '无标题')
+            summary = item.get('summary', '')[:60] + "..." # 截取摘要
+            news_list.append(f"**{index}. {title}**\n> {summary}\n")
+        
+        return "\n".join(news_list) + "\n\n"
+    except Exception as e:
+        return f"### 🌍 每日综合要闻\n获取失败: {e}\n\n"
+
+# ================= 3. 科技新闻模块 (IT之家) =================
+def get_tech_news():
+    """解析 IT之家 RSS 源获取最新科技资讯"""
+    url = "https://www.ithome.com/rss/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    try:
+        res = requests.get(url, headers=headers, timeout=15)
+        res.raise_for_status()
+        root = ET.fromstring(res.content)
+        items = root.findall('.//item')
+        
+        if not items:
+            return "### 💻 科技圈速报\n获取资讯失败：源网站未返回数据。\n\n"
+            
+        news_list = ["### 💻 科技圈速报 (IT之家)\n"]
+        for index, item in enumerate(items[:10], 1): # 提取前 10 条
+            title = item.find('title').text if item.find('title') is not None else '无标题'
+            link = item.find('link').text if item.find('link') is not None else ''
+            news_list.append(f"{index}. [{title}]({link})")
+            
+        return "\n".join(news_list) + "\n\n"
+    except Exception as e:
+        return f"### 💻 科技圈速报\n获取失败: {e}\n\n"
+
+# ================= 4. 推送模块 (Server酱) =================
+def send_to_serverchan(sendkey, title, content):
+    """通过 Server酱 推送到微信"""
+    url = f"https://sctapi.ftqq.com/{sendkey}.send"
+    data = {
+        "title": title,
+        "desp": content
+    }
+    try:
+        res = requests.post(url, data=data)
+        res.raise_for_status()
+        print("✅ Server酱 推送成功！")
+    except Exception as e:
+        print(f"❌ 推送失败: {e}")
+
+# ================= 主程序 =================
+if __name__ == "__main__":
+    # 从系统环境变量读取 SendKey（安全做法，不要把 Key 写死在代码里）
+    SENDKEY = os.environ.get("SERVERCHAN_SENDKEY")
+    
+    if not SENDKEY:
+        print("❌ 未找到 SERVERCHAN_SENDKEY 环境变量，程序退出。")
+        exit(1)
+
+    print("开始生成今日早报...")
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    report_title = f"☕ 早安！{today_str} 全球资讯简报"
+    
+    # 组装内容
+    final_content = get_weather()
+    final_content += get_readhub_news()
+    final_content += "-" * 20 + "\n\n" # 分割线
+    final_content += get_tech_news()
+    
+    # 发送推送
+    send_to_serverchan(SENDKEY, report_title, final_content)
