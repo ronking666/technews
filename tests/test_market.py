@@ -89,6 +89,23 @@ def test_fetch_market_result_returns_safe_failure_after_attempts():
     assert "secret" not in result.error
 
 
+def test_fetch_market_result_handles_ticker_construction_failure():
+    from technews.market import fetch_market_result
+
+    def fail_to_create(symbol):
+        raise RuntimeError("constructor secret detail")
+
+    result = fetch_market_result(
+        "指数",
+        "IDX",
+        ticker_factory=fail_to_create,
+        attempts=1,
+        pause=lambda seconds: None,
+    )
+
+    assert result.error == "获取失败"
+
+
 def test_render_market_report_includes_date_and_failure():
     from technews.market import MarketResult, render_market_report
 
@@ -103,4 +120,3 @@ def test_render_market_report_includes_date_and_failure():
     assert "103.00" in report
     assert "+3.00 (+3.00%)" in report
     assert "黄金" in report and "获取失败" in report
-

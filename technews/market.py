@@ -61,9 +61,9 @@ def fetch_market_result(
 ) -> MarketResult:
     """Fetch one market symbol with bounded attempts and safe errors."""
     attempts = max(1, attempts)
-    ticker = ticker_factory(symbol)
     for attempt in range(attempts):
         try:
+            ticker = ticker_factory(symbol)
             history = ticker.history(
                 period="7d",
                 timeout=15,
@@ -102,4 +102,3 @@ def render_market_report(results: tuple[MarketResult, ...]) -> str:
     if not sections:
         return "### ⚠️ 财经行情\n> 未配置行情标的"
     return "\n\n---\n\n".join(sections)
-
