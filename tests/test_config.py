@@ -1,3 +1,4 @@
+from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
@@ -42,4 +43,32 @@ def test_settings_reject_deprecated_deepseek_model(tmp_path):
     path.write_text(config, encoding="utf-8")
 
     with pytest.raises(ConfigError, match="model"):
+        load_settings(path)
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    (
+        (
+            'url = "https://www.ithome.com/rss/"',
+            'url = "ftp://example.com/rss"',
+            "HTTP URL",
+        ),
+        ("trend_windows = [5, 20]", "trend_windows = [0]", "positive integer"),
+        ('name = "IT之家"', 'name = ""', "non-empty string"),
+        (
+            'base_url = "https://api.deepseek.com"',
+            'base_url = "https://example.com"',
+            "official DeepSeek API",
+        ),
+    ),
+)
+def test_settings_reject_unsafe_or_empty_values(tmp_path, old, new, message):
+    from technews.settings import ConfigError, load_settings
+
+    config = Path("config.toml").read_text(encoding="utf-8").replace(old, new, 1)
+    path = tmp_path / "config.toml"
+    path.write_text(config, encoding="utf-8")
+
+    with pytest.raises(ConfigError, match=message):
         load_settings(path)

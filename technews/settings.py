@@ -85,6 +85,16 @@ def _http_url(value: Any, name: str) -> str:
     return url.rstrip("/")
 
 
+def _deepseek_base_url(value: Any) -> str:
+    url = _http_url(value, "ai.base_url")
+    if url not in {
+        "https://api.deepseek.com",
+        "https://api.deepseek.com/v1",
+    }:
+        raise ConfigError("ai.base_url must use the official DeepSeek API")
+    return url
+
+
 def load_settings(path: Path | None = None) -> AppSettings:
     config_path = path or Path(__file__).resolve().parents[1] / "config.toml"
     try:
@@ -149,7 +159,7 @@ def load_settings(path: Path | None = None) -> AppSettings:
         ),
         ai=AiSettings(
             enabled=enabled,
-            base_url=_http_url(ai_data.get("base_url"), "ai.base_url"),
+            base_url=_deepseek_base_url(ai_data.get("base_url")),
             model=model,
             thinking=thinking,
             max_input_chars=_positive_int(
