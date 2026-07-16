@@ -67,4 +67,3 @@ def test_render_news_report_includes_success_and_failure_sections():
     assert "[A \\[title\\]](https://example.com)" in report
     assert "## ⚠️ 失败源" in report
     assert "获取失败" in report
-

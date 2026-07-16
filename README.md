@@ -52,4 +52,3 @@ python -m pytest -q
 
 - 科技资讯来自公开 RSS。
 - 行情通过 `yfinance` 获取。Yahoo Finance 数据及接口仅适合个人研究用途，不应将本项目输出视为投资建议。
-

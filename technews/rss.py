@@ -119,4 +119,3 @@ def render_news_report(results: tuple[NewsSourceResult, ...]) -> str:
     if not sections:
         return "## ⚠️ 科技资讯\n> 未配置可用新闻源"
     return "\n\n".join(sections)
-

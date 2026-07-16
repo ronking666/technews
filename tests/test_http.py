@@ -15,4 +15,3 @@ def test_retry_session_configures_http_and_https():
 
     assert session.get_adapter("http://").max_retries.total == 3
     assert session.get_adapter("https://").max_retries.total == 3
-

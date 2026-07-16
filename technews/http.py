@@ -21,4 +21,3 @@ def create_retrying_session() -> requests.Session:
     session.mount("https://", adapter)
     session.mount("http://", adapter)
     return session
-
