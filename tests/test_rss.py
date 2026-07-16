@@ -66,3 +66,37 @@ def test_render_news_report_includes_success_and_failure_sections():
     assert "[A \\[title\\]](https://example.com)" in report
     assert "## ⚠️ 失败源" in report
     assert "获取失败" in report
+
+
+def test_render_news_report_deduplicates_across_sources():
+    from technews.rss import NewsItem, NewsSourceResult, render_news_report
+
+    report = render_news_report(
+        (
+            NewsSourceResult(
+                "首发源", (NewsItem("DeepSeek V4 发布！", "https://a.test/1"),)
+            ),
+            NewsSourceResult(
+                "转载源", (NewsItem("deepseek v4 发布", "https://b.test/2"),)
+            ),
+            NewsSourceResult("失败源", error="获取失败"),
+        ),
+        keywords=("DeepSeek",),
+        deduplicate=True,
+    )
+
+    assert report.casefold().count("deepseek v4") == 1
+    assert "## 📰 转载源" not in report
+    assert "## ⚠️ 失败源" in report
+
+
+def test_render_news_report_highlights_keywords_case_insensitively():
+    from technews.rss import NewsItem, NewsSourceResult, render_news_report
+
+    report = render_news_report(
+        (NewsSourceResult("来源", (NewsItem("DEEPSEEK 新模型", ""),)),),
+        keywords=("DeepSeek",),
+        deduplicate=False,
+    )
+
+    assert "1. 🔥 DEEPSEEK 新模型" in report

@@ -1,4 +1,5 @@
 import re
+import unicodedata
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from html import unescape
@@ -6,7 +7,13 @@ from urllib.parse import urlparse
 
 import requests
 
-from technews.config import REQUEST_TIMEOUT, RSS_SOURCES
+from technews.config import (
+    NEWS_DEDUPLICATE,
+    NEWS_ITEM_LIMIT,
+    NEWS_KEYWORDS,
+    REQUEST_TIMEOUT,
+    RSS_SOURCES,
+)
 
 RSS_HEADERS = {
     "User-Agent": "technews-daily-report/1.0 (+https://github.com/ronking666/technews)",
@@ -43,7 +50,7 @@ def _safe_link(value: str | None) -> str:
     return ""
 
 
-def parse_rss(content: bytes, limit: int = 8) -> tuple[NewsItem, ...]:
+def parse_rss(content: bytes, limit: int = NEWS_ITEM_LIMIT) -> tuple[NewsItem, ...]:
     """Parse a conventional RSS feed into sanitized news items."""
     if limit < 1:
         return ()
@@ -67,7 +74,7 @@ def fetch_news_source(
     session: requests.Session,
     name: str,
     url: str,
-    limit: int = 8,
+    limit: int = NEWS_ITEM_LIMIT,
 ) -> NewsSourceResult:
     """Fetch one source without exposing upstream exception details."""
     try:
@@ -88,7 +95,7 @@ def fetch_news_source(
 
 def collect_configured_news(
     session: requests.Session,
-    limit: int = 8,
+    limit: int = NEWS_ITEM_LIMIT,
 ) -> tuple[NewsSourceResult, ...]:
     return tuple(
         fetch_news_source(session, name, url, limit=limit) for name, url in RSS_SOURCES
@@ -99,17 +106,59 @@ def _escape_markdown_label(text: str) -> str:
     return text.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
 
 
-def render_news_report(results: tuple[NewsSourceResult, ...]) -> str:
+def normalize_news_title(title: str) -> str:
+    normalized = unicodedata.normalize("NFKC", title).casefold()
+    return "".join(character for character in normalized if character.isalnum())
+
+
+def deduplicate_news(
+    results: tuple[NewsSourceResult, ...],
+) -> tuple[NewsSourceResult, ...]:
+    seen = set()
+    filtered = []
+    for result in results:
+        if not result.items:
+            filtered.append(result)
+            continue
+        items = []
+        for item in result.items:
+            key = normalize_news_title(item.title)
+            if key and key in seen:
+                continue
+            if key:
+                seen.add(key)
+            items.append(item)
+        if items:
+            filtered.append(NewsSourceResult(result.name, tuple(items)))
+    return tuple(filtered)
+
+
+def _matches_keyword(title: str, keywords: tuple[str, ...]) -> bool:
+    normalized_title = unicodedata.normalize("NFKC", title).casefold()
+    return any(
+        unicodedata.normalize("NFKC", keyword).casefold() in normalized_title
+        for keyword in keywords
+    )
+
+
+def render_news_report(
+    results: tuple[NewsSourceResult, ...],
+    keywords: tuple[str, ...] = NEWS_KEYWORDS,
+    deduplicate: bool = NEWS_DEDUPLICATE,
+) -> str:
+    if deduplicate:
+        results = deduplicate_news(results)
     sections = []
     for result in results:
         if result.items:
             lines = [f"## 📰 {result.name}"]
             for index, item in enumerate(result.items, 1):
                 title = _escape_markdown_label(item.title)
+                prefix = "🔥 " if _matches_keyword(item.title, keywords) else ""
                 if item.link:
-                    lines.append(f"{index}. [{title}]({item.link})")
+                    lines.append(f"{index}. {prefix}[{title}]({item.link})")
                 else:
-                    lines.append(f"{index}. {title}")
+                    lines.append(f"{index}. {prefix}{title}")
             sections.append("\n".join(lines))
         else:
             sections.append(f"## ⚠️ {result.name}\n> {result.error or '未返回新闻'}")
