@@ -8,6 +8,7 @@ REQUIRED_FILES = (
     ROOT / "SECURITY.md",
     ROOT / "CODE_OF_CONDUCT.md",
     ROOT / ".editorconfig",
+    ROOT / ".gitattributes",
     ROOT / "pyproject.toml",
     ROOT / ".github" / "CODEOWNERS",
     ROOT / ".github" / "dependabot.yml",
@@ -46,6 +47,11 @@ def test_python_tooling_is_configured():
     config = tomllib.loads(read(ROOT / "pyproject.toml"))
     assert config["tool"]["ruff"]["target-version"] == "py312"
     assert config["tool"]["pytest"]["ini_options"]["testpaths"] == ["tests"]
+
+
+def test_repository_forces_lf_line_endings():
+    attributes = read(ROOT / ".gitattributes")
+    assert "* text=auto eol=lf" in attributes
 
 
 def test_ci_runs_ruff_checks():
