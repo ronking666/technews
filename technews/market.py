@@ -7,7 +7,12 @@ from typing import Any
 
 import yfinance as yf
 
-from technews.config import MARKET_TICKERS
+from technews.config import (
+    MARKET_HISTORY_PERIOD,
+    MARKET_TICKERS,
+    RANGE_DAYS,
+    TREND_WINDOWS,
+)
 
 
 @dataclass(frozen=True)
@@ -19,9 +24,19 @@ class MarketResult:
     pct_change: float | None = None
     data_date: date | None = None
     error: str | None = None
+    trend_returns: tuple[tuple[int, float], ...] = ()
+    range_window: int = 0
+    range_low: float | None = None
+    range_high: float | None = None
 
 
-def market_result_from_history(name: str, symbol: str, history: Any) -> MarketResult:
+def market_result_from_history(
+    name: str,
+    symbol: str,
+    history: Any,
+    trend_windows: tuple[int, ...] = TREND_WINDOWS,
+    range_days: int = RANGE_DAYS,
+) -> MarketResult:
     """Calculate the latest day-over-day change from a history frame."""
     if history is None or "Close" not in history:
         raise ValueError("Insufficient market history")
@@ -42,6 +57,20 @@ def market_result_from_history(name: str, symbol: str, history: Any) -> MarketRe
     if not isinstance(data_date, date):
         raise ValueError("Invalid market date")
 
+    trend_returns = []
+    for window in trend_windows:
+        if window < 1 or len(closes) <= window:
+            continue
+        baseline = float(closes.iloc[-(window + 1)])
+        if math.isfinite(baseline) and baseline != 0:
+            trend_returns.append((window, (current / baseline - 1) * 100))
+
+    range_values = [
+        float(value)
+        for value in closes.iloc[-max(1, range_days) :]
+        if math.isfinite(float(value))
+    ]
+
     return MarketResult(
         name=name,
         symbol=symbol,
@@ -49,6 +78,10 @@ def market_result_from_history(name: str, symbol: str, history: Any) -> MarketRe
         change=change,
         pct_change=pct_change,
         data_date=data_date,
+        trend_returns=tuple(trend_returns),
+        range_window=len(range_values),
+        range_low=min(range_values) if range_values else None,
+        range_high=max(range_values) if range_values else None,
     )
 
 
@@ -65,7 +98,7 @@ def fetch_market_result(
         try:
             ticker = ticker_factory(symbol)
             history = ticker.history(
-                period="7d",
+                period=MARKET_HISTORY_PERIOD,
                 timeout=15,
                 raise_errors=True,
             )
@@ -79,6 +112,11 @@ def fetch_market_result(
 
 def collect_configured_markets() -> tuple[MarketResult, ...]:
     return tuple(fetch_market_result(name, symbol) for name, symbol in MARKET_TICKERS)
+
+
+def _signed_percentage(value: float) -> str:
+    sign = "+" if value > 0 else ""
+    return f"{sign}{value:.2f}%"
 
 
 def render_market_report(results: tuple[MarketResult, ...]) -> str:
@@ -97,6 +135,23 @@ def render_market_report(results: tuple[MarketResult, ...]) -> str:
             f"> 数据日期：{result.data_date:%Y-%m-%d}\n> "
             f"最新价：**{result.current:.2f}** ｜ "
             f"涨跌：{sign}{change:.2f} ({sign}{pct_change:.2f}%)"
+            + (
+                "\n> 趋势："
+                + " ｜ ".join(
+                    f"{window}日 {_signed_percentage(value)}"
+                    for window, value in result.trend_returns
+                )
+                if result.trend_returns
+                else ""
+            )
+            + (
+                f"\n> {result.range_window}日区间："
+                f"{result.range_low:.2f} – {result.range_high:.2f}"
+                if result.range_window
+                and result.range_low is not None
+                and result.range_high is not None
+                else ""
+            )
         )
 
     if not sections:

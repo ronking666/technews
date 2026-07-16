@@ -42,6 +42,28 @@ def test_market_result_rejects_insufficient_history():
         market_result_from_history("指数", "IDX", frame)
 
 
+def test_market_result_calculates_trends_and_range():
+    from technews.market import market_result_from_history
+
+    values = tuple(float(value) for value in range(100, 125))
+    frame = pd.DataFrame(
+        {"Close": values},
+        index=pd.date_range("2026-06-01", periods=len(values), freq="D"),
+    )
+
+    result = market_result_from_history(
+        "指数", "IDX", frame, trend_windows=(5, 20), range_days=20
+    )
+
+    assert result.trend_returns == (
+        (5, pytest.approx((124 / 119 - 1) * 100)),
+        (20, pytest.approx((124 / 104 - 1) * 100)),
+    )
+    assert result.range_window == 20
+    assert result.range_low == 105.0
+    assert result.range_high == 124.0
+
+
 def test_fetch_market_result_retries_then_succeeds():
     from technews.market import fetch_market_result
 
@@ -120,3 +142,25 @@ def test_render_market_report_includes_date_and_failure():
     assert "103.00" in report
     assert "+3.00 (+3.00%)" in report
     assert "黄金" in report and "获取失败" in report
+
+
+def test_render_market_report_includes_trends_and_range():
+    from technews.market import MarketResult, render_market_report
+
+    result = MarketResult(
+        "指数",
+        "IDX",
+        124.0,
+        1.0,
+        0.81,
+        date(2026, 7, 15),
+        trend_returns=((5, 4.2), (20, 19.23)),
+        range_window=20,
+        range_low=105.0,
+        range_high=124.0,
+    )
+
+    report = render_market_report((result,))
+
+    assert "趋势：5日 +4.20% ｜ 20日 +19.23%" in report
+    assert "20日区间：105.00 – 124.00" in report
