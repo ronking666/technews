@@ -1,6 +1,5 @@
 from zoneinfo import ZoneInfo
 
-
 APP_TIMEZONE = ZoneInfo("Asia/Shanghai")
 REQUEST_TIMEOUT = (5, 15)
 

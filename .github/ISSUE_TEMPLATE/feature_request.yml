@@ -1,0 +1,46 @@
+name: 功能建议
+description: 提议新的数据、报告或维护能力
+title: "[Feature] "
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景
+      description: 你遇到了什么需求？谁会从中受益？
+      placeholder: 例如：希望在不增加推送次数的情况下突出包含指定关键词的新闻。
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 描述你希望看到的输入、输出和行为。
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+      description: 说明现有功能为什么不能满足需求。
+
+  - type: dropdown
+    id: external-impact
+    attributes:
+      label: 外部影响
+      description: 该功能是否会增加外部服务、API Key、费用或 Server酱推送次数？
+      options:
+        - 不会
+        - 可能会
+        - 会
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope-check
+    attributes:
+      label: 范围确认
+      options:
+        - label: 我已说明该功能对调度、依赖和推送次数的影响。
+          required: true

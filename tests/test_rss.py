@@ -3,7 +3,6 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-
 VALID_RSS = b"""<?xml version="1.0" encoding="UTF-8"?>
 <rss><channel>
   <item>

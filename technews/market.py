@@ -1,8 +1,8 @@
+import math
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-import math
-import time
 from typing import Any
 
 import yfinance as yf

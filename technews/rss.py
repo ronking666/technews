@@ -1,13 +1,12 @@
-from dataclasses import dataclass
-from html import unescape
 import re
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
+from html import unescape
 from urllib.parse import urlparse
 
 import requests
 
 from technews.config import REQUEST_TIMEOUT, RSS_SOURCES
-
 
 RSS_HEADERS = {
     "User-Agent": "technews-daily-report/1.0 (+https://github.com/ronking666/technews)",
@@ -92,8 +91,7 @@ def collect_configured_news(
     limit: int = 8,
 ) -> tuple[NewsSourceResult, ...]:
     return tuple(
-        fetch_news_source(session, name, url, limit=limit)
-        for name, url in RSS_SOURCES
+        fetch_news_source(session, name, url, limit=limit) for name, url in RSS_SOURCES
     )
 
 

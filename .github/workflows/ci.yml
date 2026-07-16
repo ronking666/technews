@@ -34,5 +34,11 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install -r requirements-dev.txt
 
+      - name: 检查代码质量
+        run: python -m ruff check .
+
+      - name: 检查代码格式
+        run: python -m ruff format --check .
+
       - name: 运行测试
         run: python -m pytest -q

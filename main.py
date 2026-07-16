@@ -53,7 +53,9 @@ def run(
         return 1
 
     failed_sources = len(results) - successful_sources
-    print(f"科技资讯推送成功：{successful_sources} 个源成功，{failed_sources} 个源失败。")
+    print(
+        f"科技资讯推送成功：{successful_sources} 个源成功，{failed_sources} 个源失败。"
+    )
     return 0
 
 

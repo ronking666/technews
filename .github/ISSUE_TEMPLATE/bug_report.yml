@@ -1,0 +1,59 @@
+name: Bug 报告
+description: 报告可复现的推送、数据或工作流问题
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。提交前请移除 SendKey、令牌和个人信息。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题描述
+      description: 发生了什么？问题影响了哪一类报告？
+      placeholder: 例如：财经工作流成功，但报告中的某个标的一直显示获取失败。
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 请提供最短、稳定的复现过程。
+      placeholder: |
+        1. 打开 Actions
+        2. 手动运行每日财经行情推送
+        3. 查看已脱敏的步骤结果
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+      description: 你原本期望看到什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Actions 日志摘要
+      description: 只粘贴相关且已脱敏的几行，不要粘贴完整日志或任何 Secret。
+      render: text
+
+  - type: input
+    id: environment
+    attributes:
+      label: 运行环境
+      description: GitHub Actions，或本地 Python 与操作系统版本。
+      placeholder: GitHub Actions / Python 3.12 / Windows 11
+
+  - type: checkboxes
+    id: secret-check
+    attributes:
+      label: 敏感信息确认
+      options:
+        - label: 我已确认内容中不包含 SendKey、令牌或个人信息。
+          required: true

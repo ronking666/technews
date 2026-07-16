@@ -49,7 +49,9 @@ def run(
         return 1
 
     failed_markets = len(results) - successful_markets
-    print(f"财经行情推送成功：{successful_markets} 个标的成功，{failed_markets} 个标的失败。")
+    print(
+        f"财经行情推送成功：{successful_markets} 个标的成功，{failed_markets} 个标的失败。"
+    )
     return 0
 
 
