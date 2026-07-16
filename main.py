@@ -4,6 +4,7 @@ from datetime import datetime
 
 import requests
 
+from technews.ai import SummaryError, configured_summary, prepend_summary
 from technews.config import APP_TIMEZONE
 from technews.http import create_retrying_session
 from technews.notifier import NotificationError, send_to_serverchan
@@ -28,6 +29,7 @@ def run(
     session: requests.Session | None = None,
     notifier: Callable[[str, str, str], None] = send_to_serverchan,
     results: tuple[NewsSourceResult, ...] | None = None,
+    summarizer: Callable[[str, str], str | None] = configured_summary,
 ) -> int:
     """Build and send the technology report, returning a process exit code."""
     if not sendkey or not sendkey.strip():
@@ -40,6 +42,12 @@ def run(
 
     successful_sources = sum(bool(result.items) for result in results)
     content = render_news_report(results)
+    try:
+        summary = summarizer("news", content)
+    except SummaryError as error:
+        print(f"AI 摘要已跳过：{error}")
+        summary = None
+    content = prepend_summary(content, summary)
     title = f"📰 每日科技资讯早报 ({report_time:%Y年%m月%d日})"
 
     try:

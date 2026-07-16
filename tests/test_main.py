@@ -54,3 +54,45 @@ def test_notification_failure_returns_failure_without_leaking_key(capsys):
 
     assert run("very-secret", results=news_results(), notifier=notifier) == 1
     assert "very-secret" not in capsys.readouterr().out
+
+
+def test_news_report_prepends_ai_summary():
+    from main import run
+
+    notifier = Mock()
+    summarizer = Mock(return_value="今日重点")
+
+    assert (
+        run(
+            "key",
+            results=news_results(),
+            notifier=notifier,
+            summarizer=summarizer,
+        )
+        == 0
+    )
+
+    content = notifier.call_args.args[2]
+    assert content.startswith("## 🤖 DeepSeek AI 摘要")
+    assert "今日重点" in content
+
+
+def test_news_summary_failure_still_sends_original_report():
+    from main import run
+    from technews.ai import SummaryError
+
+    notifier = Mock()
+
+    def summarizer(*args):
+        raise SummaryError("DeepSeek summary request failed")
+
+    assert (
+        run(
+            "key",
+            results=news_results(),
+            notifier=notifier,
+            summarizer=summarizer,
+        )
+        == 0
+    )
+    assert "DeepSeek AI 摘要" not in notifier.call_args.args[2]

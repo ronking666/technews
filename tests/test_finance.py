@@ -54,3 +54,24 @@ def test_finance_notification_failure_hides_key(capsys):
 
     assert run("very-secret", results=market_results(), notifier=notifier) == 1
     assert "very-secret" not in capsys.readouterr().out
+
+
+def test_finance_report_prepends_ai_summary():
+    from finance import run
+
+    notifier = Mock()
+    summarizer = Mock(return_value="行情重点")
+
+    assert (
+        run(
+            "key",
+            results=market_results(),
+            notifier=notifier,
+            summarizer=summarizer,
+        )
+        == 0
+    )
+
+    content = notifier.call_args.args[2]
+    assert content.startswith("## 🤖 DeepSeek AI 摘要")
+    assert "行情重点" in content

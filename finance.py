@@ -2,6 +2,7 @@ import os
 from collections.abc import Callable
 from datetime import datetime
 
+from technews.ai import SummaryError, configured_summary, prepend_summary
 from technews.config import APP_TIMEZONE
 from technews.market import (
     MarketResult,
@@ -24,6 +25,7 @@ def run(
     now: datetime | None = None,
     notifier: Callable[[str, str, str], None] = send_to_serverchan,
     results: tuple[MarketResult, ...] | None = None,
+    summarizer: Callable[[str, str], str | None] = configured_summary,
 ) -> int:
     """Build and send the finance report, returning a process exit code."""
     if not sendkey or not sendkey.strip():
@@ -36,6 +38,12 @@ def run(
 
     successful_markets = sum(result.error is None for result in results)
     content = render_market_report(results)
+    try:
+        summary = summarizer("finance", content)
+    except SummaryError as error:
+        print(f"AI 摘要已跳过：{error}")
+        summary = None
+    content = prepend_summary(content, summary)
     title = f"📊 每日财经与金属行情早报 ({report_time:%Y年%m月%d日})"
 
     try:
