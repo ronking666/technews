@@ -1,0 +1,54 @@
+[news]
+items_per_source = 8
+deduplicate = true
+keywords = ["AI", "人工智能", "大模型", "DeepSeek", "芯片", "半导体", "机器人"]
+
+[[news.sources]]
+name = "IT之家"
+url = "https://www.ithome.com/rss/"
+
+[[news.sources]]
+name = "少数派"
+url = "https://sspai.com/feed"
+
+[[news.sources]]
+name = "爱范儿"
+url = "https://www.ifanr.com/feed"
+
+[finance]
+history_period = "3mo"
+trend_windows = [5, 20]
+range_days = 20
+
+[[finance.tickers]]
+name = "纳斯达克100指数"
+symbol = "^NDX"
+
+[[finance.tickers]]
+name = "黄金（纽约期金）"
+symbol = "GC=F"
+
+[[finance.tickers]]
+name = "白银（纽约期银）"
+symbol = "SI=F"
+
+[[finance.tickers]]
+name = "铜（纽约期铜）"
+symbol = "HG=F"
+
+[[finance.tickers]]
+name = "铂金（纽约期铂）"
+symbol = "PL=F"
+
+[[finance.tickers]]
+name = "稀土与战略金属ETF"
+symbol = "REMX"
+
+[ai]
+enabled = true
+base_url = "https://api.deepseek.com"
+model = "deepseek-v4-flash"
+thinking = false
+max_input_chars = 12000
+max_output_tokens = 500
+timeout_seconds = 60
