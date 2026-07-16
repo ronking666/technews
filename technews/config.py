@@ -6,6 +6,8 @@ REQUEST_TIMEOUT = (5, 15)
 
 RSS_SOURCES = (
     ("IT之家", "https://www.ithome.com/rss/"),
+    ("少数派", "https://sspai.com/feed"),
+    ("爱范儿", "https://www.ifanr.com/feed"),
 )
 
 MARKET_TICKERS = (
@@ -16,4 +18,3 @@ MARKET_TICKERS = (
     ("铂金（纽约期铂）", "PL=F"),
     ("稀土与战略金属ETF", "REMX"),
 )
-
