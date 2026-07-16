@@ -10,8 +10,11 @@
 
 - **完全自动化**：无需服务器，GitHub Actions 按北京时间每天执行。
 - **两类独立报告**：科技资讯与财经行情互不影响，单个任务失败不会阻塞另一个。
+- **更清晰的新闻**：自动合并跨来源重复标题，并用 `🔥` 标出关注关键词。
+- **增强的财经趋势**：同时展示 5 日、20 日涨跌和近 20 个交易日价格区间。
+- **可选 AI 摘要**：使用 DeepSeek V4 Flash 生成中文要点，失败时自动回退到完整原报告。
 - **容错获取**：单个 RSS 来源或行情标的失败时，仍推送其他有效内容。
-- **安全推送**：SendKey 只通过 GitHub Actions Secret 注入，不写入代码或日志。
+- **安全推送**：SendKey 和 DeepSeek API Key 只通过 GitHub Actions Secret 注入，不写入代码或日志。
 - **可验证**：pytest 覆盖数据处理、失败路径和工作流配置，Ruff 统一代码质量与格式。
 
 ## 推送时间
@@ -37,7 +40,17 @@ GitHub 的定时任务可能因平台负载延迟数分钟。两个任务使用�
 
 仓库设为私有不会妨碍它运行自身的定时 Actions；只有有权限的账号才能查看代码、运行记录和日志。
 
-### 2. 本地开发
+### 2. 配置 DeepSeek 摘要（可选）
+
+1. 在 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys) 创建 API Key。
+2. 打开仓库的 `Settings` → `Secrets and variables` → `Actions`。
+3. 新建 Repository secret：名称填写 `DEEPSEEK_API_KEY`，值填写 API Key。
+
+不要把 API Key 粘贴到聊天、代码、Issue 或日志中。未配置密钥、额度不足或接口暂时不可用时，早报仍会发送，只是不包含 AI 摘要。
+
+项目默认使用 `deepseek-v4-flash` 非思考模式；模型、超时和摘要长度可在 `config.toml` 中调整。
+
+### 3. 本地开发
 
 项目要求 Python 3.12 或更高版本：
 
@@ -55,7 +68,7 @@ python -m ruff format --check .
 python -m pytest -q
 ```
 
-如需在本地实际推送，请先临时设置 `SERVERCHAN_SENDKEY` 环境变量，再运行：
+如需在本地实际推送，请先临时设置 `SERVERCHAN_SENDKEY`；需要 AI 摘要时再设置 `DEEPSEEK_API_KEY`，然后运行：
 
 ```bash
 python main.py
@@ -66,12 +79,13 @@ python finance.py
 
 ## 配置数据源
 
-数据源统一保存在 [`technews/config.py`](technews/config.py)：
+可修改项统一保存在 [`config.toml`](config.toml)：
 
-- `RSS_SOURCES`：科技资讯来源名称与 RSS 地址；
-- `MARKET_TICKERS`：行情显示名称与 Yahoo Finance symbol；
-- `REQUEST_TIMEOUT`：外部请求连接与读取超时；
-- `APP_TIMEZONE`：报告日期使用的时区。
+- `[news]`：RSS 来源、每源条数、去重开关和高亮关键词；
+- `[finance]`：行情标的、历史周期、趋势窗口和价格区间天数；
+- `[ai]`：DeepSeek 开关、V4 模型、超时和输入输出上限。
+
+`technews/config.py` 只保留程序运行常量和兼容入口。配置在程序启动时严格校验，拼写错误或不安全的地址会直接给出明确错误。
 
 新增来源后，请同时增加测试，并确认单个来源失败时其他内容仍可推送。
 
@@ -80,8 +94,9 @@ python finance.py
 ```text
 .
 ├── .github/workflows/       # CI、科技早报与财经早报任务
-├── technews/                # HTTP、RSS、行情、通知与配置模块
+├── technews/                # HTTP、RSS、行情、AI 摘要、通知与配置模块
 ├── tests/                   # 单元测试和仓库质量测试
+├── config.toml              # 新闻、财经和 AI 的可编辑配置
 ├── main.py                  # 科技资讯报告入口
 ├── finance.py               # 财经行情报告入口
 ├── requirements.txt         # 运行时依赖
@@ -94,6 +109,7 @@ python finance.py
 - 某个新闻源或行情标的失败：仍推送其他成功内容，并在报告中标注失败项。
 - 所有上游数据均失败：尝试推送失败摘要，随后让工作流显示失败。
 - Secret 缺失或 Server酱推送失败：工作流直接失败，并输出不含 SendKey 的错误信息。
+- DeepSeek 密钥缺失或摘要调用失败：跳过 AI 摘要，继续发送确定性的原始报告。
 - 财经报告显示数据对应的实际交易日期，避免把休市日旧数据误认为实时行情。
 
 ## 质量保障
@@ -121,10 +137,14 @@ GitHub 的 cron 不是实时调度器，高峰期可能延迟数分钟。先查�
 
 不会。只要至少一个来源或标的成功，报告就会继续推送，并标记失败项。
 
+### 为什么报告里没有 AI 摘要？
+
+先确认仓库 Actions Secret 中存在 `DEEPSEEK_API_KEY`，再检查 DeepSeek 账户额度。即使 AI 不可用，项目也会保留原始新闻和行情推送，避免影响每天收报。
+
 ## 安全与隐私
 
-- 永远不要把 SendKey 提交到仓库、Issue、Pull Request、Actions 日志或截图。
-- Secret 泄露后，应立即在 Server酱后台更换并更新 GitHub Repository secret。
+- 永远不要把 SendKey 或 DeepSeek API Key 提交到仓库、聊天、Issue、Pull Request、Actions 日志或截图。
+- Secret 泄露后，应立即在对应服务后台撤销并更新 GitHub Repository secret。
 - 安全问题请按照 [`SECURITY.md`](SECURITY.md) 私下报告。
 - GitHub Actions 和第三方数据源会按各自的隐私政策处理网络请求。
 
@@ -132,6 +152,7 @@ GitHub 的 cron 不是实时调度器，高峰期可能延迟数分钟。先查�
 
 - 科技资讯来自配置的公开 RSS，内容版权归原始发布者所有。
 - 行情通过 `yfinance` 获取 Yahoo Finance 数据，仅适合个人研究。
+- AI 摘要会把截断后的报告内容发送给 DeepSeek；摘要可能遗漏或误解信息，请以原文和实际数据为准。
 - 本项目输出可能存在延迟、缺失或错误，不构成投资建议。
 
 ## 贡献

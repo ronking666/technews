@@ -10,6 +10,7 @@ REQUIRED_FILES = (
     ROOT / ".editorconfig",
     ROOT / ".gitattributes",
     ROOT / "pyproject.toml",
+    ROOT / "config.toml",
     ROOT / ".github" / "CODEOWNERS",
     ROOT / ".github" / "dependabot.yml",
     ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
