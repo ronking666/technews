@@ -2,30 +2,38 @@ name: 每日科技资讯推送
 
 on:
   schedule:
-    - cron: '34 21 * * *'
-  
+    # UTC 21:30 = 北京时间次日 05:30
+    - cron: '30 21 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-tech-news
+  cancel-in-progress: false
+
 jobs:
-  run-python-script:
+  push-news:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
+      - name: 检出代码
+        uses: actions/checkout@v4
 
-    - name: 设置 Python 环境
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
 
-    - name: 安装依赖包
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests
+      - name: 安装依赖
+        run: python -m pip install -r requirements.txt
 
-    - name: 运行推送脚本
-      env:
-        SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
-      run: |
-        python main.py
+      - name: 运行科技资讯推送
+        env:
+          SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+        run: python main.py
+
