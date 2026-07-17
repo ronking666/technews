@@ -100,3 +100,22 @@ def test_render_news_report_highlights_keywords_case_insensitively():
     )
 
     assert "1. 🔥 DEEPSEEK 新模型" in report
+
+
+def test_render_news_report_adds_mobile_spacing_and_source_dividers():
+    from technews.rss import NewsItem, NewsSourceResult, render_news_report
+
+    report = render_news_report(
+        (
+            NewsSourceResult(
+                "来源一",
+                (NewsItem("第一条"), NewsItem("第二条")),
+            ),
+            NewsSourceResult("来源二", (NewsItem("第三条"),)),
+        ),
+        keywords=(),
+        deduplicate=False,
+    )
+
+    assert "## 📰 来源一\n\n1. 第一条\n\n2. 第二条" in report
+    assert "\n\n---\n\n## 📰 来源二" in report

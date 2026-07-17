@@ -78,3 +78,24 @@ def test_prepend_summary_adds_disclaimer():
     assert report.startswith("## 🤖 DeepSeek AI 摘要")
     assert "仅供快速浏览" in report
     assert report.endswith("## 原始报告")
+
+
+@pytest.mark.parametrize("report_kind", ("news", "finance"))
+def test_summary_prompt_requires_mobile_markdown_bullets(report_kind):
+    from technews.ai import generate_summary
+
+    response = Mock()
+    response.json.return_value = {"choices": [{"message": {"content": "- 摘要"}}]}
+    post = Mock(return_value=response)
+
+    generate_summary(
+        "deepseek-secret",
+        report_kind,
+        "report content",
+        settings=ai_settings(),
+        post=post,
+    )
+
+    system_prompt = post.call_args.kwargs["json"]["messages"][0]["content"]
+    assert "Markdown 项目符号" in system_prompt
+    assert "不要输出标题" in system_prompt

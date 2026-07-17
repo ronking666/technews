@@ -130,29 +130,25 @@ def render_market_report(results: tuple[MarketResult, ...]) -> str:
         pct_change = result.pct_change or 0.0
         emoji = "📈" if change > 0 else "📉" if change < 0 else "➖"
         sign = "+" if change > 0 else ""
-        sections.append(
-            f"### {emoji} {result.name}\n"
-            f"> 数据日期：{result.data_date:%Y-%m-%d}\n> "
-            f"最新价：**{result.current:.2f}** ｜ "
-            f"涨跌：{sign}{change:.2f} ({sign}{pct_change:.2f}%)"
-            + (
-                "\n> 趋势："
-                + " ｜ ".join(
-                    f"{window}日 {_signed_percentage(value)}"
-                    for window, value in result.trend_returns
-                )
-                if result.trend_returns
-                else ""
+        lines = [
+            f"### {emoji} {result.name}",
+            "",
+            f"- **数据日期**：{result.data_date:%Y-%m-%d}",
+            f"- **最新价**：**{result.current:.2f}**",
+            f"- **当日涨跌**：{sign}{change:.2f}（{sign}{pct_change:.2f}%）",
+        ]
+        for window, value in result.trend_returns:
+            lines.append(f"- **{window}日趋势**：{_signed_percentage(value)}")
+        if (
+            result.range_window
+            and result.range_low is not None
+            and result.range_high is not None
+        ):
+            lines.append(
+                f"- **{result.range_window}日区间**："
+                f"{result.range_low:.2f} ～ {result.range_high:.2f}"
             )
-            + (
-                f"\n> {result.range_window}日区间："
-                f"{result.range_low:.2f} – {result.range_high:.2f}"
-                if result.range_window
-                and result.range_low is not None
-                and result.range_high is not None
-                else ""
-            )
-        )
+        sections.append("\n".join(lines))
 
     if not sections:
         return "### ⚠️ 财经行情\n> 未配置行情标的"

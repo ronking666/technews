@@ -138,9 +138,9 @@ def test_render_market_report_includes_date_and_failure():
         )
     )
 
-    assert "数据日期：2026-07-15" in report
-    assert "103.00" in report
-    assert "+3.00 (+3.00%)" in report
+    assert "- **数据日期**：2026-07-15" in report
+    assert "- **最新价**：**103.00**" in report
+    assert "- **当日涨跌**：+3.00（+3.00%）" in report
     assert "黄金" in report and "获取失败" in report
 
 
@@ -162,5 +162,10 @@ def test_render_market_report_includes_trends_and_range():
 
     report = render_market_report((result,))
 
-    assert "趋势：5日 +4.20% ｜ 20日 +19.23%" in report
-    assert "20日区间：105.00 – 124.00" in report
+    assert "- **数据日期**：2026-07-15" in report
+    assert "- **最新价**：**124.00**" in report
+    assert "- **当日涨跌**：+1.00（+0.81%）" in report
+    assert "- **5日趋势**：+4.20%" in report
+    assert "- **20日趋势**：+19.23%" in report
+    assert "- **20日区间**：105.00 ～ 124.00" in report
+    assert " ｜ " not in report

@@ -159,10 +159,10 @@ def render_news_report(
                     lines.append(f"{index}. {prefix}[{title}]({item.link})")
                 else:
                     lines.append(f"{index}. {prefix}{title}")
-            sections.append("\n".join(lines))
+            sections.append("\n\n".join(lines))
         else:
             sections.append(f"## ⚠️ {result.name}\n> {result.error or '未返回新闻'}")
 
     if not sections:
         return "## ⚠️ 科技资讯\n> 未配置可用新闻源"
-    return "\n\n".join(sections)
+    return "\n\n---\n\n".join(sections)
