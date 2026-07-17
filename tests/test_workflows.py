@@ -27,6 +27,7 @@ def test_scheduled_workflows_use_requirements_and_least_privilege():
         assert "timeout-minutes: 10" in text
         assert "concurrency:" in text
         assert "cache: 'pip'" in text
+        assert "workflow_dispatch:" in text
         assert "DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}" in text
 
 
