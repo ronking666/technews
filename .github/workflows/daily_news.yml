@@ -2,8 +2,9 @@ name: 每日科技资讯推送
 
 on:
   schedule:
-    # UTC 21:30 = 北京时间次日 05:30
-    - cron: '30 21 * * *'
+    # 北京时间 04:27；整体前移以吸收 GitHub schedule 排队延迟
+    - cron: '27 4 * * *'
+      timezone: 'Asia/Shanghai'
   workflow_dispatch:
 
 permissions:

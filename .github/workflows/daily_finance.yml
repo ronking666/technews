@@ -2,8 +2,9 @@ name: 每日财经行情推送
 
 on:
   schedule:
-    # UTC 22:15 = 北京时间次日 06:15
-    - cron: '15 22 * * *'
+    # 纽约收盘后 47 分钟；自动适配美国夏令时
+    - cron: '47 16 * * *'
+      timezone: 'America/New_York'
   workflow_dispatch:
 
 permissions:

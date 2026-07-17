@@ -7,12 +7,16 @@ def workflow(name: str) -> str:
     return (WORKFLOWS / name).read_text(encoding="utf-8")
 
 
-def test_news_schedule_is_0530_shanghai():
-    assert "cron: '30 21 * * *'" in workflow("daily_news.yml")
+def test_news_schedule_is_0427_shanghai():
+    text = workflow("daily_news.yml")
+    assert "cron: '27 4 * * *'" in text
+    assert "timezone: 'Asia/Shanghai'" in text
 
 
-def test_finance_schedule_is_0615_shanghai():
-    assert "cron: '15 22 * * *'" in workflow("daily_finance.yml")
+def test_finance_schedule_tracks_new_york_close():
+    text = workflow("daily_finance.yml")
+    assert "cron: '47 16 * * *'" in text
+    assert "timezone: 'America/New_York'" in text
 
 
 def test_scheduled_workflows_use_requirements_and_least_privilege():
