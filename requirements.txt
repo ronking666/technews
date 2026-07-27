@@ -1,2 +1,2 @@
 requests==2.34.2
-yfinance==1.5.1
+yfinance==1.5.2
