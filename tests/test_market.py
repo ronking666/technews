@@ -64,6 +64,48 @@ def test_market_result_calculates_trends_and_range():
     assert result.range_high == 124.0
 
 
+def test_market_result_fills_missing_ndx_close_before_calculating_change():
+    from technews.market import market_result_from_history
+
+    frame = pd.DataFrame(
+        {
+            "Close": [
+                28592.66,
+                28604.23,
+                29155.18,
+                28998.10,
+                28454.81,
+                28039.21,
+            ]
+        },
+        index=pd.to_datetime(
+            [
+                "2026-07-17",
+                "2026-07-20",
+                "2026-07-21",
+                "2026-07-22",
+                "2026-07-23",
+                "2026-07-27",
+            ]
+        ),
+    )
+
+    result = market_result_from_history(
+        "纳斯达克100指数",
+        "^NDX",
+        frame,
+        trend_windows=(5,),
+        range_days=5,
+        fallback_closes={date(2026, 7, 24): 28128.34},
+    )
+
+    assert result.change == pytest.approx(-89.13)
+    assert result.pct_change == pytest.approx(-0.316866, rel=1e-5)
+    window, value = result.trend_returns[0]
+    assert window == 5
+    assert value == pytest.approx((28039.21 / 28604.23 - 1) * 100)
+
+
 def test_fetch_market_result_retries_then_succeeds():
     from technews.market import fetch_market_result
 
@@ -126,6 +168,80 @@ def test_fetch_market_result_handles_ticker_construction_failure():
     )
 
     assert result.error == "获取失败"
+
+
+def test_fetch_ndx_uses_official_history_to_fill_missing_close():
+    from technews.market import fetch_market_result
+
+    frame = pd.DataFrame(
+        {"Close": [28454.81, 28039.21]},
+        index=pd.to_datetime(["2026-07-23", "2026-07-27"]),
+    )
+
+    class Ticker:
+        def history(self, **kwargs):
+            return frame
+
+    def official_history_loader(series_id, start, end):
+        assert series_id == "NASDAQ100"
+        assert start == date(2026, 7, 23)
+        assert end == date(2026, 7, 27)
+        return {date(2026, 7, 24): 28128.34}
+
+    result = fetch_market_result(
+        "纳斯达克100指数",
+        "^NDX",
+        ticker_factory=lambda symbol: Ticker(),
+        attempts=1,
+        official_history_loader=official_history_loader,
+    )
+
+    assert result.error is None
+    assert result.change == pytest.approx(-89.13)
+
+
+def test_fetch_ndx_fails_closed_when_official_history_is_unavailable():
+    from technews.fred import MarketDataError
+    from technews.market import fetch_market_result
+
+    class Ticker:
+        def history(self, **kwargs):
+            return history()
+
+    def failing_loader(*args):
+        raise MarketDataError("safe failure")
+
+    result = fetch_market_result(
+        "纳斯达克100指数",
+        "^NDX",
+        ticker_factory=lambda symbol: Ticker(),
+        attempts=1,
+        official_history_loader=failing_loader,
+    )
+
+    assert result.error == "获取失败"
+
+
+def test_fetch_non_ndx_market_does_not_require_official_history():
+    from technews.market import fetch_market_result
+
+    class Ticker:
+        def history(self, **kwargs):
+            return history()
+
+    def forbidden_loader(*args):
+        raise AssertionError("official loader should not be called")
+
+    result = fetch_market_result(
+        "黄金",
+        "GC=F",
+        ticker_factory=lambda symbol: Ticker(),
+        attempts=1,
+        official_history_loader=forbidden_loader,
+    )
+
+    assert result.error is None
+    assert result.current == 103.0
 
 
 def test_render_market_report_includes_date_and_failure():

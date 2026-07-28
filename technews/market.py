@@ -1,6 +1,6 @@
 import math
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -13,6 +13,9 @@ from technews.config import (
     RANGE_DAYS,
     TREND_WINDOWS,
 )
+from technews.fred import fetch_fred_closes
+
+OFFICIAL_HISTORY_SERIES = {"^NDX": "NASDAQ100"}
 
 
 @dataclass(frozen=True)
@@ -36,24 +39,42 @@ def market_result_from_history(
     history: Any,
     trend_windows: tuple[int, ...] = TREND_WINDOWS,
     range_days: int = RANGE_DAYS,
+    fallback_closes: Mapping[date, float] | None = None,
 ) -> MarketResult:
     """Calculate the latest day-over-day change from a history frame."""
     if history is None or "Close" not in history:
         raise ValueError("Insufficient market history")
 
-    closes = history["Close"].dropna()
+    observations: dict[date, float] = {}
+    for index, raw_value in history["Close"].items():
+        try:
+            value = float(raw_value)
+        except (TypeError, ValueError):
+            continue
+        observed = index.date() if hasattr(index, "date") else index
+        if isinstance(observed, date) and math.isfinite(value):
+            observations[observed] = value
+
+    for observed, raw_value in (fallback_closes or {}).items():
+        try:
+            value = float(raw_value)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(observed, date) and math.isfinite(value):
+            observations.setdefault(observed, value)
+
+    closes = sorted(observations.items())
     if len(closes) < 2:
         raise ValueError("Insufficient market history")
 
-    previous = float(closes.iloc[-2])
-    current = float(closes.iloc[-1])
+    previous = closes[-2][1]
+    current = closes[-1][1]
     if not math.isfinite(previous) or not math.isfinite(current) or previous == 0:
         raise ValueError("Invalid market history")
 
     change = current - previous
     pct_change = change / previous * 100
-    latest_index = closes.index[-1]
-    data_date = latest_index.date() if hasattr(latest_index, "date") else latest_index
+    data_date = closes[-1][0]
     if not isinstance(data_date, date):
         raise ValueError("Invalid market date")
 
@@ -61,14 +82,12 @@ def market_result_from_history(
     for window in trend_windows:
         if window < 1 or len(closes) <= window:
             continue
-        baseline = float(closes.iloc[-(window + 1)])
+        baseline = closes[-(window + 1)][1]
         if math.isfinite(baseline) and baseline != 0:
             trend_returns.append((window, (current / baseline - 1) * 100))
 
     range_values = [
-        float(value)
-        for value in closes.iloc[-max(1, range_days) :]
-        if math.isfinite(float(value))
+        value for _, value in closes[-max(1, range_days) :] if math.isfinite(value)
     ]
 
     return MarketResult(
@@ -91,6 +110,9 @@ def fetch_market_result(
     ticker_factory: Callable[[str], Any] = yf.Ticker,
     attempts: int = 3,
     pause: Callable[[float], None] = time.sleep,
+    official_history_loader: Callable[
+        [str, date, date], Mapping[date, float]
+    ] = fetch_fred_closes,
 ) -> MarketResult:
     """Fetch one market symbol with bounded attempts and safe errors."""
     attempts = max(1, attempts)
@@ -102,7 +124,28 @@ def fetch_market_result(
                 timeout=15,
                 raise_errors=True,
             )
-            return market_result_from_history(name, symbol, history)
+            fallback_closes: Mapping[date, float] | None = None
+            series_id = OFFICIAL_HISTORY_SERIES.get(symbol)
+            if series_id is not None:
+                yahoo_closes = history["Close"].dropna()
+                if len(yahoo_closes) < 2:
+                    raise ValueError("Insufficient Yahoo market history")
+                first_index = yahoo_closes.index[0]
+                last_index = yahoo_closes.index[-1]
+                start = (
+                    first_index.date() if hasattr(first_index, "date") else first_index
+                )
+                end = last_index.date() if hasattr(last_index, "date") else last_index
+                if not isinstance(start, date) or not isinstance(end, date):
+                    raise ValueError("Invalid Yahoo market date")
+                fallback_closes = official_history_loader(series_id, start, end)
+
+            return market_result_from_history(
+                name,
+                symbol,
+                history,
+                fallback_closes=fallback_closes,
+            )
         except Exception:
             if attempt + 1 < attempts:
                 pause(float(attempt + 1))
