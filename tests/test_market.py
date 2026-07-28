@@ -106,6 +106,32 @@ def test_market_result_fills_missing_ndx_close_before_calculating_change():
     assert value == pytest.approx((28039.21 / 28604.23 - 1) * 100)
 
 
+def test_market_result_preserves_yahoo_values_and_calculates_20_day_trend():
+    from technews.market import market_result_from_history
+
+    dates = pd.bdate_range(end="2026-07-27", periods=22)
+    values = tuple(float(value) for value in range(100, 122))
+    frame = pd.DataFrame({"Close": values}, index=dates)
+
+    result = market_result_from_history(
+        "纳斯达克100指数",
+        "^NDX",
+        frame,
+        trend_windows=(5, 20),
+        fallback_closes={
+            dates[-2].date(): 999.0,
+            dates[-21].date(): 999.0,
+        },
+    )
+
+    assert result.current == 121.0
+    assert result.change == 1.0
+    assert result.trend_returns == (
+        (5, pytest.approx((121 / 116 - 1) * 100)),
+        (20, pytest.approx((121 / 101 - 1) * 100)),
+    )
+
+
 def test_fetch_market_result_retries_then_succeeds():
     from technews.market import fetch_market_result
 
@@ -186,7 +212,10 @@ def test_fetch_ndx_uses_official_history_to_fill_missing_close():
         assert series_id == "NASDAQ100"
         assert start == date(2026, 7, 23)
         assert end == date(2026, 7, 27)
-        return {date(2026, 7, 24): 28128.34}
+        return {
+            date(2026, 7, 23): 28454.81,
+            date(2026, 7, 24): 28128.34,
+        }
 
     result = fetch_market_result(
         "纳斯达克100指数",
@@ -220,6 +249,53 @@ def test_fetch_ndx_fails_closed_when_official_history_is_unavailable():
     )
 
     assert result.error == "获取失败"
+
+
+def test_fetch_ndx_fails_closed_when_official_history_is_incomplete():
+    from technews.market import fetch_market_result
+
+    frame = pd.DataFrame(
+        {"Close": [28454.81, 28039.21]},
+        index=pd.to_datetime(["2026-07-23", "2026-07-27"]),
+    )
+
+    class Ticker:
+        def history(self, **kwargs):
+            return frame
+
+    result = fetch_market_result(
+        "纳斯达克100指数",
+        "^NDX",
+        ticker_factory=lambda symbol: Ticker(),
+        attempts=1,
+        official_history_loader=lambda *args: {date(2026, 7, 23): 28454.81},
+    )
+
+    assert result.error == "获取失败"
+
+
+def test_fetch_ndx_allows_a_standard_market_holiday_gap():
+    from technews.market import fetch_market_result
+
+    frame = pd.DataFrame(
+        {"Close": [29000.0, 29100.0]},
+        index=pd.to_datetime(["2026-07-02", "2026-07-06"]),
+    )
+
+    class Ticker:
+        def history(self, **kwargs):
+            return frame
+
+    result = fetch_market_result(
+        "纳斯达克100指数",
+        "^NDX",
+        ticker_factory=lambda symbol: Ticker(),
+        attempts=1,
+        official_history_loader=lambda *args: {date(2026, 7, 2): 29000.0},
+    )
+
+    assert result.error is None
+    assert result.change == 100.0
 
 
 def test_fetch_non_ndx_market_does_not_require_official_history():

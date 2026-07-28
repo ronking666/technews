@@ -14,6 +14,7 @@ from technews.config import (
     TREND_WINDOWS,
 )
 from technews.fred import fetch_fred_closes
+from technews.market_calendar import expected_nasdaq_sessions
 
 OFFICIAL_HISTORY_SERIES = {"^NDX": "NASDAQ100"}
 
@@ -139,6 +140,9 @@ def fetch_market_result(
                 if not isinstance(start, date) or not isinstance(end, date):
                     raise ValueError("Invalid Yahoo market date")
                 fallback_closes = official_history_loader(series_id, start, end)
+                expected_sessions = expected_nasdaq_sessions(start, end)
+                if not expected_sessions.issubset(fallback_closes):
+                    raise ValueError("Incomplete official market history")
 
             return market_result_from_history(
                 name,
