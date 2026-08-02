@@ -13,7 +13,7 @@ def test_technology_report_has_independent_news_sources():
     assert len(hosts) == len(RSS_SOURCES)
 
 
-def test_default_news_sources_preserve_existing_and_add_global_coverage():
+def test_default_news_sources_are_chinese_and_preserve_originals():
     from technews.settings import load_settings
 
     sources = load_settings().news.sources
@@ -24,18 +24,12 @@ def test_default_news_sources_preserve_existing_and_add_global_coverage():
         ("爱范儿", "https://www.ifanr.com/feed"),
     )
     assert sources[3:] == (
-        ("Hacker News 热门", "https://hnrss.org/frontpage"),
-        ("Ars Technica", "https://feeds.arstechnica.com/arstechnica/index"),
-        (
-            "TechCrunch AI",
-            "https://techcrunch.com/category/artificial-intelligence/feed/",
-        ),
-        (
-            "MIT Technology Review AI",
-            "https://www.technologyreview.com/topic/artificial-intelligence/feed/",
-        ),
-        ("OpenAI 官方动态", "https://openai.com/news/rss.xml"),
-        ("Google AI 官方动态", "https://blog.google/technology/ai/rss/"),
+        ("雷峰网", "https://www.leiphone.com/feed"),
+        ("极客公园", "https://www.geekpark.net/rss"),
+        ("InfoQ中文", "https://www.infoq.cn/feed"),
+        ("Solidot", "https://www.solidot.org/index.rss"),
+        ("36氪", "https://36kr.com/feed"),
+        ("钛媒体", "https://www.tmtpost.com/rss.xml"),
     )
 
 
