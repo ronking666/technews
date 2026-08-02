@@ -13,6 +13,32 @@ def test_technology_report_has_independent_news_sources():
     assert len(hosts) == len(RSS_SOURCES)
 
 
+def test_default_news_sources_preserve_existing_and_add_global_coverage():
+    from technews.settings import load_settings
+
+    sources = load_settings().news.sources
+
+    assert sources[:3] == (
+        ("IT之家", "https://www.ithome.com/rss/"),
+        ("少数派", "https://sspai.com/feed"),
+        ("爱范儿", "https://www.ifanr.com/feed"),
+    )
+    assert sources[3:] == (
+        ("Hacker News 热门", "https://hnrss.org/frontpage"),
+        ("Ars Technica", "https://feeds.arstechnica.com/arstechnica/index"),
+        (
+            "TechCrunch AI",
+            "https://techcrunch.com/category/artificial-intelligence/feed/",
+        ),
+        (
+            "MIT Technology Review AI",
+            "https://www.technologyreview.com/topic/artificial-intelligence/feed/",
+        ),
+        ("OpenAI 官方动态", "https://openai.com/news/rss.xml"),
+        ("Google AI 官方动态", "https://blog.google/technology/ai/rss/"),
+    )
+
+
 def test_default_settings_load_report_enhancements():
     from technews.settings import load_settings
 

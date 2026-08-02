@@ -15,6 +15,30 @@ url = "https://sspai.com/feed"
 name = "爱范儿"
 url = "https://www.ifanr.com/feed"
 
+[[news.sources]]
+name = "Hacker News 热门"
+url = "https://hnrss.org/frontpage"
+
+[[news.sources]]
+name = "Ars Technica"
+url = "https://feeds.arstechnica.com/arstechnica/index"
+
+[[news.sources]]
+name = "TechCrunch AI"
+url = "https://techcrunch.com/category/artificial-intelligence/feed/"
+
+[[news.sources]]
+name = "MIT Technology Review AI"
+url = "https://www.technologyreview.com/topic/artificial-intelligence/feed/"
+
+[[news.sources]]
+name = "OpenAI 官方动态"
+url = "https://openai.com/news/rss.xml"
+
+[[news.sources]]
+name = "Google AI 官方动态"
+url = "https://blog.google/technology/ai/rss/"
+
 [finance]
 history_period = "3mo"
 trend_windows = [5, 20]
