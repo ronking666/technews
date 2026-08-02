@@ -48,18 +48,18 @@ def test_default_news_sources_preserve_existing_and_add_global_coverage():
         ("Ars Technica", "https://feeds.arstechnica.com/arstechnica/index"),
         (
             "TechCrunch AI",
-            "https://techcrunch.com/category/artificial-intelligence/feed",
+            "https://techcrunch.com/category/artificial-intelligence/feed/",
         ),
         (
             "MIT Technology Review AI",
-            "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+            "https://www.technologyreview.com/topic/artificial-intelligence/feed/",
         ),
         ("OpenAI 官方动态", "https://openai.com/news/rss.xml"),
-        ("Google AI 官方动态", "https://blog.google/technology/ai/rss"),
+        ("Google AI 官方动态", "https://blog.google/technology/ai/rss/"),
     )
 ```
 
-`load_settings` 会统一删除 URL 末尾 `/`，因此预期值使用规范化后的 URL。
+`load_settings` 校验但不重写来源 URL，因此预期值精确保留 `config.toml` 中的末尾 `/`。
 
 - [ ] **Step 2: Run the test to verify RED**
 
