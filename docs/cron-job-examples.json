@@ -1,0 +1,74 @@
+{
+  "examples": [
+    {
+      "job": {
+        "title": "TechNews 科技早报",
+        "enabled": false,
+        "url": "https://api.github.com/repos/ronking666/technews/actions/workflows/daily_news.yml/dispatches",
+        "requestMethod": 1,
+        "requestTimeout": 30,
+        "saveResponses": false,
+        "schedule": {
+          "timezone": "Asia/Shanghai",
+          "hours": [6],
+          "minutes": [40, 50],
+          "mdays": [-1],
+          "months": [-1],
+          "wdays": [-1],
+          "expiresAt": 0
+        },
+        "extendedData": {
+          "headers": {
+            "Authorization": "Bearer YOUR_GITHUB_TRIGGER_TOKEN",
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+            "X-GitHub-Api-Version": "2026-03-10",
+            "User-Agent": "technews-external-scheduler"
+          },
+          "body": "{\"ref\":\"main\"}"
+        },
+        "notification": {
+          "onFailure": true,
+          "onFailureCount": 1,
+          "onSuccess": true,
+          "onDisable": true
+        }
+      }
+    },
+    {
+      "job": {
+        "title": "TechNews 财经早报",
+        "enabled": false,
+        "url": "https://api.github.com/repos/ronking666/technews/actions/workflows/daily_finance.yml/dispatches",
+        "requestMethod": 1,
+        "requestTimeout": 30,
+        "saveResponses": false,
+        "schedule": {
+          "timezone": "Asia/Shanghai",
+          "hours": [6],
+          "minutes": [40, 50],
+          "mdays": [-1],
+          "months": [-1],
+          "wdays": [-1],
+          "expiresAt": 0
+        },
+        "extendedData": {
+          "headers": {
+            "Authorization": "Bearer YOUR_GITHUB_TRIGGER_TOKEN",
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+            "X-GitHub-Api-Version": "2026-03-10",
+            "User-Agent": "technews-external-scheduler"
+          },
+          "body": "{\"ref\":\"main\"}"
+        },
+        "notification": {
+          "onFailure": true,
+          "onFailureCount": 1,
+          "onSuccess": true,
+          "onDisable": true
+        }
+      }
+    }
+  ]
+}
