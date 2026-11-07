@@ -28,6 +28,7 @@ def test_all_delivery_paths_share_serial_execution_and_receipt_conditions():
     for filename, kind, group in (
         ("daily_news.yml", "news", "daily-tech-news"),
         ("daily_finance.yml", "finance", "daily-finance-report"),
+        ("daily_futures.yml", "futures", "daily-futures-report"),
     ):
         config = document(filename)
         assert config["concurrency"] == {
@@ -76,3 +77,15 @@ def test_ci_runs_the_complete_test_suite():
     assert "pull_request:" in text
     assert "pip install -r requirements-dev.txt" in text
     assert "python -m pytest -q" in text
+
+
+def test_night_workflow_starts_at_beijing_2030_with_existing_notification_secret():
+    config = document("daily_futures.yml")
+    assert config["on"]["schedule"] == [
+        {"cron": "30 20 * * *", "timezone": "Asia/Shanghai"}
+    ]
+    assert "workflow_dispatch" in config["on"]
+    steps = next(iter(config["jobs"].values()))["steps"]
+    send = next(step for step in steps if step.get("id") == "send")
+    assert send["run"] == "python futures.py"
+    assert send["env"] == {"SERVERCHAN_SENDKEY": "${{ secrets.SERVERCHAN_SENDKEY }}"}

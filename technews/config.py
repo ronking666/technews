@@ -15,3 +15,4 @@ MARKET_HISTORY_PERIOD = SETTINGS.finance.history_period
 TREND_WINDOWS = SETTINGS.finance.trend_windows
 RANGE_DAYS = SETTINGS.finance.range_days
 AI_SETTINGS = SETTINGS.ai
+FUTURES_SETTINGS = SETTINGS.futures
