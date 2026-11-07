@@ -76,3 +76,31 @@ thinking = false
 max_input_chars = 12000
 max_output_tokens = 500
 timeout_seconds = 60
+
+[futures]
+# 晚报使用盘中延迟报价；超过此分钟数时提示报价较旧。
+max_age_minutes = 120
+
+[[futures.tickers]]
+name = "纳指100期货"
+symbol = "NQ=F"
+
+[[futures.tickers]]
+name = "标普500期货"
+symbol = "ES=F"
+
+[[futures.tickers]]
+name = "道指期货"
+symbol = "YM=F"
+
+[[futures.tickers]]
+name = "美元指数"
+symbol = "DX-Y.NYB"
+
+[[futures.tickers]]
+name = "黄金期货"
+symbol = "GC=F"
+
+[[futures.tickers]]
+name = "WTI原油期货"
+symbol = "CL=F"
