@@ -26,7 +26,7 @@ def prepare_delivery(
     now: datetime | None = None,
     opener=None,
 ) -> tuple[bool, str]:
-    if report not in ("news", "finance", "futures"):
+    if report not in ("news", "finance"):
         raise DeliveryGuardError("Unknown report type")
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise DeliveryGuardError("Missing or invalid repository")
@@ -94,7 +94,7 @@ def prepare_delivery(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("report", choices=("news", "finance", "futures"))
+    parser.add_argument("report", choices=("news", "finance"))
     args = parser.parse_args(argv)
     now = datetime.now(UTC)
     try:
