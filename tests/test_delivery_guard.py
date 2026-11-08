@@ -141,26 +141,6 @@ def test_finance_uses_its_own_receipt_name():
     ) == (True, "technews-sent-finance-2026-11-04")
 
 
-def test_evening_receipt_is_independent_of_morning_finance():
-    from technews.delivery_guard import prepare_delivery
-
-    payload = api_page([receipt(name="technews-sent-finance-2026-11-04")])
-
-    def open_request(request, timeout):
-        assert parse_qs(urlsplit(request.full_url).query)["name"] == [
-            "technews-sent-futures-2026-11-04"
-        ]
-        return nullcontext(io.BytesIO(json.dumps(payload).encode()))
-
-    args = ("futures", REPOSITORY, "test-token", "main")
-    assert prepare_delivery(*args, now=NOW, opener=open_request) == (
-        True,
-        "technews-sent-futures-2026-11-04",
-    )
-    payload["artifacts"] = [receipt(name="technews-sent-futures-2026-11-04")]
-    assert prepare_delivery(*args, now=NOW, opener=open_request)[0] is False
-
-
 def test_beijing_midnight_starts_a_new_daily_receipt():
     from technews.delivery_guard import prepare_delivery
 

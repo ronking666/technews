@@ -26,19 +26,6 @@ class FinanceSettings:
 
 
 @dataclass(frozen=True)
-class FuturesSettings:
-    max_age_minutes: int = 120
-    tickers: tuple[tuple[str, str], ...] = (
-        ("纳指100期货", "NQ=F"),
-        ("标普500期货", "ES=F"),
-        ("道指期货", "YM=F"),
-        ("美元指数", "DX-Y.NYB"),
-        ("黄金期货", "GC=F"),
-        ("WTI原油期货", "CL=F"),
-    )
-
-
-@dataclass(frozen=True)
 class AiSettings:
     enabled: bool
     base_url: str
@@ -54,7 +41,6 @@ class AppSettings:
     news: NewsSettings
     finance: FinanceSettings
     ai: AiSettings
-    futures: FuturesSettings = FuturesSettings()
 
 
 def _positive_int(value: Any, name: str) -> int:
@@ -150,24 +136,7 @@ def load_settings(path: Path | None = None) -> AppSettings:
     if not isinstance(deduplicate, bool):
         raise ConfigError("news.deduplicate must be boolean")
 
-    futures = FuturesSettings()
-    if "futures" in data:
-        futures_data = _table(data, "futures")
-        tickers = _named_pairs(futures_data.get("tickers"), "futures.tickers", "symbol")
-        symbols = [symbol for _, symbol in tickers]
-        if "NQ=F" not in symbols or len(symbols) != len(set(symbols)):
-            raise ConfigError("futures.tickers must include NQ=F and unique symbols")
-        if len(symbols) > 10:
-            raise ConfigError("futures.tickers supports at most 10 symbols")
-        futures = FuturesSettings(
-            max_age_minutes=_positive_int(
-                futures_data.get("max_age_minutes"), "futures.max_age_minutes"
-            ),
-            tickers=tickers,
-        )
-
     return AppSettings(
-        futures=futures,
         news=NewsSettings(
             items_per_source=_positive_int(
                 news_data.get("items_per_source"), "news.items_per_source"
